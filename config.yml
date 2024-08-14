@@ -1,0 +1,11 @@
+jwt:
+  key: "verydifficultsecretkey"
+router:
+  host: ""
+  port: "8080"
+db:
+  host: "db"
+  port: "5432"
+  user: "baseuser"
+  password: "basepassword"
+  dbName: "testtask"

@@ -52,7 +52,7 @@ func New(cfg *Config, service IService) *Router {
 		MaxAge:           300,
 	}))
 
-	r.router.Get("/auth", r.service.Auth())
+	r.router.Get("/auth/{guid}", r.service.Auth())
 	r.router.Get("/refresh", r.service.Refresh())
 
 	return r

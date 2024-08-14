@@ -24,7 +24,7 @@ func New(cfg *Config, method jwt.SigningMethod) *Manager {
 	}
 }
 
-func (m *Manager) GenerateToken(guid uuid.UUID, ip string) (string, error) {
+func (m *Manager) GenerateRefreshToken(guid uuid.UUID, ip string) (string, error) {
 	jwtClaims := jwt.MapClaims{
 		"guid": guid,
 		"ip":   ip,
@@ -34,7 +34,21 @@ func (m *Manager) GenerateToken(guid uuid.UUID, ip string) (string, error) {
 		m.method,
 		jwtClaims,
 	)
-	// TODO: Закодировать внутрь JWT Access идентификатор refresh токена в бд, чтобы только с ним можно было рефрешить
+
+	return token.SignedString([]byte(m.cfg.Key))
+}
+
+func (m *Manager) GenerateAccessToken(guid uuid.UUID, ip string, refreshId int) (string, error) {
+	jwtClaims := jwt.MapClaims{
+		"guid":      guid,
+		"ip":        ip,
+		"refreshId": refreshId,
+	}
+
+	token := jwt.NewWithClaims(
+		m.method,
+		jwtClaims,
+	)
 
 	return token.SignedString(m.cfg.Key)
 }

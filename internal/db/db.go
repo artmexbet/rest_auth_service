@@ -48,9 +48,11 @@ func (d *DB) AddUser(user models.User) error {
 	return err
 }
 
-func (d *DB) AddRefreshToken(token string, guid uuid.UUID) error {
-	_, err := d.db.Exec(context.Background(),
+func (d *DB) AddRefreshToken(token string, guid uuid.UUID) (int, error) {
+	var id int
+	// TODO: make token field encoded by bcrypt
+	err := d.db.QueryRow(context.Background(),
 		`INSERT INTO public.tokens (user_id, token)
-			 VALUES ($1, $2)`, guid, token)
-	return err
+			 VALUES ($1, $2) RETURNING id`, guid, token).Scan(&id)
+	return id, err
 }
