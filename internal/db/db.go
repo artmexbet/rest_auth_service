@@ -40,10 +40,11 @@ func (d *DB) Close() error {
 	return d.db.Close(context.Background())
 }
 
-func (d *DB) AddUser(user models.User) error {
+func (d *DB) AddUserIfNotExist(user models.User) error {
 	_, err := d.db.Exec(context.Background(),
 		`INSERT INTO public.users (id, ip) 
-			 VALUES ($1, $2)`, user.Guid, user.Ip,
+			 VALUES ($1, $2)
+			 ON CONFLICT (id) DO UPDATE SET ip=$2`, user.Guid, user.Ip,
 	)
 	return err
 }

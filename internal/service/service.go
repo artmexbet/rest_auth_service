@@ -15,7 +15,7 @@ type IJWTManager interface {
 }
 
 type IDatabase interface {
-	AddUser(user models.User) error
+	AddUserIfNotExist(user models.User) error
 	AddRefreshToken(token string, guid uuid.UUID) (int, error)
 }
 
@@ -48,7 +48,7 @@ func (s *Service) Auth() http.HandlerFunc {
 			return
 		}
 
-		if err := s.db.AddUser(models.User{Guid: guid, Ip: r.RemoteAddr}); err != nil {
+		if err := s.db.AddUserIfNotExist(models.User{Guid: guid, Ip: r.RemoteAddr}); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			logger.Error("Cannot add user", slog.String("err", err.Error()))
 			return

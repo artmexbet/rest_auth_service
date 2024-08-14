@@ -50,5 +50,5 @@ func (m *Manager) GenerateAccessToken(guid uuid.UUID, ip string, refreshId int) 
 		jwtClaims,
 	)
 
-	return token.SignedString(m.cfg.Key)
+	return token.SignedString([]byte(m.cfg.Key))
 }
