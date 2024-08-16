@@ -5,7 +5,7 @@
 -- Dumped from database version 15.7 (Debian 15.7-1.pgdg120+1)
 -- Dumped by pg_dump version 16.3
 
--- Started on 2024-08-11 22:20:24
+-- Started on 2024-08-16 11:55:56
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -29,7 +29,7 @@ CREATE SCHEMA public;
 ALTER SCHEMA public OWNER TO pg_database_owner;
 
 --
--- TOC entry 3356 (class 0 OID 0)
+-- TOC entry 3358 (class 0 OID 0)
 -- Dependencies: 4
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
 --
@@ -49,7 +49,7 @@ SET default_table_access_method = heap;
 CREATE TABLE public.tokens (
     id integer NOT NULL,
     user_id uuid NOT NULL,
-    token character varying(300) NOT NULL
+    token bytea NOT NULL
 );
 
 
@@ -72,7 +72,7 @@ CREATE SEQUENCE public.tokens_id_seq
 ALTER SEQUENCE public.tokens_id_seq OWNER TO baseuser;
 
 --
--- TOC entry 3357 (class 0 OID 0)
+-- TOC entry 3359 (class 0 OID 0)
 -- Dependencies: 215
 -- Name: tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: baseuser
 --
@@ -87,7 +87,8 @@ ALTER SEQUENCE public.tokens_id_seq OWNED BY public.tokens.id;
 
 CREATE TABLE public.users (
     id uuid NOT NULL,
-    ip character varying(100) NOT NULL
+    ip character varying(100) NOT NULL,
+    mail character varying(100)
 );
 
 
@@ -111,6 +112,15 @@ ALTER TABLE ONLY public.tokens
 
 
 --
+-- TOC entry 3209 (class 2606 OID 24599)
+-- Name: tokens tokens_token_key; Type: CONSTRAINT; Schema: public; Owner: baseuser
+--
+
+ALTER TABLE ONLY public.tokens
+    ADD CONSTRAINT tokens_token_key UNIQUE (token);
+
+
+--
 -- TOC entry 3205 (class 2606 OID 16393)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: baseuser
 --
@@ -120,7 +130,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3208 (class 2606 OID 16401)
+-- TOC entry 3210 (class 2606 OID 16401)
 -- Name: tokens tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: baseuser
 --
 
@@ -128,7 +138,7 @@ ALTER TABLE ONLY public.tokens
     ADD CONSTRAINT tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
--- Completed on 2024-08-11 22:20:25
+-- Completed on 2024-08-16 11:55:57
 
 --
 -- PostgreSQL database dump complete

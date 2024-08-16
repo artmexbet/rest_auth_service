@@ -2,7 +2,9 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"log/slog"
 	"net/http"
@@ -11,12 +13,15 @@ import (
 
 type IJWTManager interface {
 	GenerateRefreshToken(guid uuid.UUID, ip string) (string, error)
-	GenerateAccessToken(guid uuid.UUID, ip string, refreshId int) (string, error)
+	GenerateAccessToken(guid uuid.UUID, ip string, id int) (string, error)
+	GetClaims(token string, claimsType jwt.Claims) (jwt.Claims, error)
+	CompareTokens(token string, hashedToken []byte) bool
 }
 
 type IDatabase interface {
 	AddUserIfNotExist(user models.User) error
 	AddRefreshToken(token string, guid uuid.UUID) (int, error)
+	GetRefreshToken(refreshTokenId int) ([]byte, error)
 }
 
 // Service ...
@@ -89,6 +94,80 @@ func (s *Service) Auth() http.HandlerFunc {
 // gets Refresh token and returns new Access and Refresh tokens
 func (s *Service) Refresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: implement
+		logger := slog.With(slog.String("module", "Service.Refresh"))
+
+		var data models.RefreshTokenJSON
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, "Can't parse json", http.StatusBadRequest)
+			logger.Error("Can't parse json", slog.String("err", err.Error()))
+			return
+		}
+
+		refreshClaims, err := s.jwtManager.GetClaims(data.RefreshT, &models.RefreshTokenClaims{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("Cannot get refreshClaims from token", slog.String("err", err.Error()))
+			return
+		}
+
+		decodedRefreshClaims, ok := refreshClaims.(*models.RefreshTokenClaims)
+		if !ok {
+			http.Error(w, "Cannot convert refreshClaims to RefreshTokenClaims", http.StatusBadRequest)
+			logger.Error("Cannot convert refreshClaims to RefreshTokenClaims")
+			return
+		}
+
+		accessClaims, err := s.jwtManager.GetClaims(data.AccessT, &models.AccessTokenClaims{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("Cannot get accessClaims from token", slog.String("err", err.Error()))
+			return
+		}
+
+		fmt.Println(accessClaims)
+		decodedAccessClaims, ok := accessClaims.(*models.AccessTokenClaims)
+
+		if !ok {
+			http.Error(w, "Cannot convert accessClaims to AccessTokenClaims", http.StatusBadRequest)
+			logger.Error("Cannot convert accessClaims to AccessTokenClaims")
+			return
+		}
+
+		if decodedRefreshClaims.Guid != decodedAccessClaims.Guid {
+			http.Error(w, "Guid from token doesn't match guid from request", http.StatusBadRequest)
+			logger.Error("Guid from token doesn't match guid from request")
+			return
+		}
+
+		tokenFromDb, err := s.db.GetRefreshToken(decodedAccessClaims.RefreshId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("Cannot get token from DB", slog.String("err", err.Error()))
+			return
+		}
+
+		if !s.jwtManager.CompareTokens(data.RefreshT, tokenFromDb) {
+			http.Error(w, "Tokens are not identical", http.StatusBadRequest)
+			logger.Error("Tokens are not identical")
+			return
+		}
+
+		if decodedRefreshClaims.Ip != r.RemoteAddr {
+			// TODO: Handle this case
+			//  Send email to address
+		}
+
+		accessToken, err := s.jwtManager.GenerateAccessToken(decodedRefreshClaims.Guid, r.RemoteAddr, decodedAccessClaims.RefreshId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("Cannot generate access token", slog.String("err", err.Error()))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		if err := json.NewEncoder(w).Encode(models.AccessRefreshJSON{AccessT: accessToken, RefreshT: data.RefreshT}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("Cannot write encoded json", slog.String("err", err.Error()))
+		}
 	}
 }

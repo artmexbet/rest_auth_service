@@ -53,7 +53,7 @@ func New(cfg *Config, service IService) *Router {
 	}))
 
 	r.router.Get("/auth/{guid}", r.service.Auth())
-	r.router.Get("/refresh", r.service.Refresh())
+	r.router.Post("/refresh/", r.service.Refresh())
 
 	return r
 }
