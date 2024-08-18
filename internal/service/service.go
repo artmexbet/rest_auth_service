@@ -22,19 +22,26 @@ type IDatabase interface {
 	AddUserIfNotExist(user models.User) error
 	AddRefreshToken(token string, guid uuid.UUID) (int, error)
 	GetRefreshToken(refreshTokenId int) ([]byte, error)
+	GetUser(guid uuid.UUID) (models.User, error)
+}
+
+type IEmailService interface {
+	SendWarning(email string) error
 }
 
 // Service ...
 type Service struct {
-	jwtManager IJWTManager
-	db         IDatabase
+	jwtManager   IJWTManager
+	db           IDatabase
+	emailService IEmailService
 }
 
 // New ...
-func New(manager IJWTManager, db IDatabase) *Service {
+func New(manager IJWTManager, db IDatabase, emailService IEmailService) *Service {
 	return &Service{
-		jwtManager: manager,
-		db:         db,
+		jwtManager:   manager,
+		db:           db,
+		emailService: emailService,
 	}
 }
 
@@ -153,8 +160,14 @@ func (s *Service) Refresh() http.HandlerFunc {
 		}
 
 		if decodedRefreshClaims.Ip != r.RemoteAddr {
-			// TODO: Handle this case
-			//  Send email to address
+			user, err := s.db.GetUser(decodedRefreshClaims.Guid)
+			if err != nil {
+				logger.Error("Cannot get user from DB", slog.String("err", err.Error()))
+			}
+
+			if err := s.emailService.SendWarning(user.Email); err != nil {
+				logger.Error("Cannot send warning message to user", slog.String("err", err.Error()))
+			}
 		}
 
 		accessToken, err := s.jwtManager.GenerateAccessToken(decodedRefreshClaims.Guid, r.RemoteAddr, decodedAccessClaims.RefreshId)

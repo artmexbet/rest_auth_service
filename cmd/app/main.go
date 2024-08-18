@@ -5,6 +5,7 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"restAuthPart/internal/db"
+	"restAuthPart/internal/emailService"
 	"restAuthPart/internal/jwt"
 	"restAuthPart/internal/logger/sl"
 	"restAuthPart/internal/router"
@@ -42,7 +43,9 @@ func main() {
 
 	jwtManager := jwt.New(&cfg.JWTConfig, _jwt.SigningMethodHS512)
 
-	svc := service.New(jwtManager, database)
+	email := emailService.New()
+
+	svc := service.New(jwtManager, database, email)
 
 	r := router.New(&cfg.RouterConfig, svc)
 	err = r.Run()

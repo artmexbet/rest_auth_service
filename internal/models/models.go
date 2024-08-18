@@ -6,8 +6,9 @@ import (
 )
 
 type User struct {
-	Guid uuid.UUID
-	Ip   string
+	Guid  uuid.UUID
+	Ip    string
+	Email string
 }
 
 type AccessRefreshJSON struct {

@@ -49,8 +49,8 @@ func (d *DB) Close() error {
 func (d *DB) AddUserIfNotExist(user models.User) error {
 	_, err := d.db.Exec(context.Background(),
 		`INSERT INTO public.users (id, ip) 
-			 VALUES ($1, $2)
-			 ON CONFLICT (id) DO UPDATE SET ip=$2`, user.Guid, user.Ip,
+			 VALUES ($1, $2, $3)
+			 ON CONFLICT (id) DO UPDATE SET ip=$2`, user.Guid, user.Ip, user.Email,
 	)
 	return err
 }
@@ -76,4 +76,11 @@ func (d *DB) GetRefreshToken(refreshTokenId int) ([]byte, error) {
 	err := d.db.QueryRow(context.Background(),
 		`SELECT token FROM public.tokens WHERE id=$1`, refreshTokenId).Scan(&hashedToken)
 	return hashedToken, err
+}
+
+func (d *DB) GetUser(guid uuid.UUID) (models.User, error) {
+	var user models.User
+	err := d.db.QueryRow(context.Background(),
+		`SELECT * FROM public.users WHERE id=$1`, guid).Scan(&user.Guid, &user.Ip, &user.Email)
+	return user, err
 }
