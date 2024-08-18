@@ -90,6 +90,7 @@ func (s *Service) Auth() http.HandlerFunc {
 
 		tokenJson := models.AccessRefreshJSON{AccessT: accessToken, RefreshT: rToken}
 		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(tokenJson); err != nil {
 			logger.Error("Cannot write encoded json", slog.String("err", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -117,6 +118,8 @@ func (s *Service) Refresh() http.HandlerFunc {
 			return
 		}
 
+		fmt.Println(refreshClaims)
+
 		decodedRefreshClaims, ok := refreshClaims.(*models.RefreshTokenClaims)
 		if !ok {
 			http.Error(w, "Cannot convert refreshClaims to RefreshTokenClaims", http.StatusBadRequest)
@@ -131,7 +134,6 @@ func (s *Service) Refresh() http.HandlerFunc {
 			return
 		}
 
-		fmt.Println(accessClaims)
 		decodedAccessClaims, ok := accessClaims.(*models.AccessTokenClaims)
 
 		if !ok {
@@ -178,6 +180,7 @@ func (s *Service) Refresh() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(models.AccessRefreshJSON{AccessT: accessToken, RefreshT: data.RefreshT}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("Cannot write encoded json", slog.String("err", err.Error()))

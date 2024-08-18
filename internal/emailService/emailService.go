@@ -2,17 +2,17 @@ package emailService
 
 import "fmt"
 
-// MocEmail ...
-type MocEmail struct {
+// Email ...
+type Email struct {
 }
 
 // New ...
-func New() *MocEmail {
-	return &MocEmail{}
+func New() *Email {
+	return &Email{}
 }
 
 // SendWarning ...
-func (e *MocEmail) SendWarning(email string) error {
+func (e *Email) SendWarning(email string) error {
 	fmt.Printf("Sanding message to email '%s'\n", email)
 	return nil
 }
